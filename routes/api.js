@@ -116,7 +116,7 @@ router.put('/users/registeradmin', (req, res) => {
     })
 })
 router.put('/users/registerowner', (req, res) => {
-    if(typeof req.body.username_to_promote !== 'undefined'){
+    if(typeof req.body.username_to_promote === 'undefined'){
         return res.json({
             success: false,
             message: 'Error: username_to_promote is undefined'

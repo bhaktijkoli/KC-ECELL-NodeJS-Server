@@ -88,6 +88,6 @@ function onListening() {
     : 'port ' + addr.port;
   debug('Listening on ' + bind);
 
-  console.log('[+]\tServer listenning on http://localhost:'+addr.port);
+  console.log('[+]\tServer listening on http://localhost:'+addr.port);
 
 }
