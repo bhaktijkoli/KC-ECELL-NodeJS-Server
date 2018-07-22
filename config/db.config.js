@@ -1,7 +1,5 @@
-{
-    "port": 7070,
-    "bodyLimit": "100kb",
-    "corsHeaders": ["Link"],
+module.exports =  {
+    "secret":"kcecell_auth",
     "db_uri": "mongodb://localhost:27017/",
     "db_name": "attendance_system"
 }

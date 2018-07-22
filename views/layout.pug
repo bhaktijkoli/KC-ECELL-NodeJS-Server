@@ -10,19 +10,5 @@ html(lang="en")
             //- script(src="")
     body
         block header
-            nav
-                a.logo(href="/") Attendance System
-                ul
-                    if (!user)
-                        li
-                            a(href="/login") Login
-                        li
-                            a(href="/register") Register
-                    if (user)
-                        li 
-                            a(href="") Welcome #{user.fullname}
-                        li
-                            a(href="/logout") Logout
-
         block content
         block footer
