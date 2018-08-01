@@ -33,7 +33,7 @@ router.post('/users', UserController.create)
 router.get('/users', function (req, res) {
     let token = getToken(req.headers)
     if (token) {
-        verifyRole(token, (error, role, user) => {
+        verifyRole(res, token, (error, role, user) => {
             if (error) {
                 return res.json({
                     success: false,
@@ -73,12 +73,18 @@ router.get('/users', function (req, res) {
     } else {
         return res.status(401).send({
             success: false,
-            msg: 'Unauthorizzed'
+            msg: 'Unauthorized'
         })
     }
 })
-router.put('/users/registeradmin', (req, res) => {
-    verifyRole(getToken(req.headers), (err, role, user) => {
+router.put('/users/makeadmin', (req, res) => {
+    if(typeof req.body.username_to_promote === 'undefined'){
+        return res.json({
+            success: false,
+            message: 'Error: username_to_promote is undefined'
+        })
+    }
+    verifyRole(res, getToken(req.headers), (err, role, user) => {
         if (err) throw err
         if (role == 'admin') {
             return res.json({
@@ -115,14 +121,14 @@ router.put('/users/registeradmin', (req, res) => {
         }
     })
 })
-router.put('/users/registerowner', (req, res) => {
+router.put('/users/makeowner', (req, res) => {
     if(typeof req.body.username_to_promote === 'undefined'){
         return res.json({
             success: false,
             message: 'Error: username_to_promote is undefined'
         })
     }
-    verifyRole(getToken(req.headers), (err, role, user) => {
+    verifyRole(res, getToken(req.headers), (err, role, user) => {
         if (err) throw err
         if (role == 'admin') {
             return res.json({
@@ -162,17 +168,18 @@ router.put('/users', UserController.update)
 router.delete('/users', UserController.remove)
 router.post('/users/login', UserController.login)
 
-var verifyJWT = function (token, next) {
+var verifyJWT = function (res, token, next) {
     jwt.verify(token, CONFIG.jwt_encryption, function (err, decoded) {
         if (err) res.send({
             success: false,
-            message: 'Token is invalid.\n'+err
+            message: 'Token is invalid.',
+            err
         })
         next(decoded)
     })
 }
-var verifyRole = function (token, cb) {
-    verifyJWT(token, (decoded) => {
+var verifyRole = function (res, token, cb) {
+    verifyJWT(res, token, (decoded) => {
         User.findById(decoded.user_id, (err, user) => {
             if (err) cb(err, null, null)
             if (!user) cb(null, {

@@ -7,7 +7,7 @@ const create = async function (req, res) {
     res.setHeader('Content-Type', 'application/json')
     const body = req.body
     if (!(body.username && body.password && body.email && body.fullname && body.mobile_number && body.branch && body.position)){
-        return responseError(res, 'Please enter all the required fields.')
+        return responseError(res, 'Please enter all the required fields.', 406)
     } else if (body.password !== body.password_conf){
         return responseError(res, 'Passwords don\'t match!')
     } else if (!validator.isEmail(body.email)) {
@@ -26,9 +26,9 @@ const create = async function (req, res) {
         })
         user.save(function(err, user){
             if(err){
-                return responseError(res, 'User already exisits', 409)
+                return responseError(res, 'User already exisits', 406)
             }
-            return responseSuccess(res, {message: 'User registered', username: user.username}, 209)
+            return responseSuccess(res, {message: 'User registered', username: user.username}, 201)
         })
     }
 }
@@ -43,17 +43,26 @@ const update = async function(req, res){}
 const remove = async function(req, res){}
 const login = async function(req, res) {
     res.setHeader('Content-Type', 'application/json')
-    let body = req.body 
+    let body = req.body
+    if(!body.email){
+        return responseError(res, {success: false, message: 'Please enter email'}, 406)
+    }
+    if(!body.password){
+        return responseError(res, {success: false, message: 'Please enter password'}, 406)
+    }
     if(validator.isEmail(body.email)){
         User.findOne({email:body.email}, function(err, user){
             if(err){
-                return responseError(res, {message: 'No such email.'}, 408)
+                return responseError(res, {message: 'No such email.'}, 404)
             } else if(user.comparePassword(body.password, user.password)) {
-                return responseSuccess(res, {token:user.getJWT(), user:user.toWeb()}, 200)
+                res.setHeader('Authorization', user.getJWT())
+                return responseSuccess(res, {token:user.getJWT(), user: user.username}, 202)
             } else {
                 return responseError(res, {message: 'Error'}, 404)
             }            
         })
+    } else {
+        return responseError(res, {success: false, message: 'Invalid Email'}, 404)
     }
 }
 module.exports.create = create;
