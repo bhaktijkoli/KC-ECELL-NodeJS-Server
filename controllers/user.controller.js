@@ -58,7 +58,7 @@ const login = async function(req, res) {
                 res.setHeader('Authorization', user.getJWT())
                 return responseSuccess(res, {token:user.getJWT(), user: user.username}, 202)
             } else {
-                return responseError(res, {message: 'Error'}, 404)
+                return responseError(res, {message: 'Login failed'}, 404)
             }            
         })
     } else {

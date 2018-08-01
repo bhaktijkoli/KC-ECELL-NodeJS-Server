@@ -23,25 +23,50 @@ router.get('/', function (req, res, next) {
         success: true,
         message: "Attendance System API",
         data: {
-            "version_number": "v0.1.0"
+            "version_number": "v0.1.1"
         }
     })
 })
 
-router.post('/users', UserController.create)
+router.post('/user', UserController.create)
+
+router.get('/user', function(req, res){
+    let token = getToken(req.headers)
+    if (token) {
+        verifyRole(res, token, (error, role, user) => {
+            if (error) {
+                return res.status(401).send({
+                    success: false,
+                    message: 'Invalid Token'
+                })
+            }
+            user.password = 'hidden'
+            return res.send({
+                status: role,
+                user: user,
+            })
+        })
+    } else {
+        return res.status(401).send({
+            success: false,
+            msg: 'Unauthorized'
+        })
+    }
+})
+
 
 router.get('/users', function (req, res) {
     let token = getToken(req.headers)
     if (token) {
         verifyRole(res, token, (error, role, user) => {
             if (error) {
-                return res.json({
+                return res.status(404).send({
                     success: false,
                     message: 'Error: Token invalid.'
                 })
             }
             if(!role){
-                return res.json({
+                return res.status(404).send({
                     success: false,
                     message: 'Error: Role not found.'
                 })
@@ -53,20 +78,18 @@ router.get('/users', function (req, res) {
                         userX['role'] = "hidden"
                         userX.email="hidden"
                     })
-                    if (err) return res.send({
+                    if (err) return res.status(404).send({
                         success: false,
                         error: err
                     })
                     res.send({
-                        user: user,
                         users: users,
                     })
                 })
             } else {
-                user.password = 'hidden'
-                res.send({
-                    status: role,
-                    user: user,
+                res.status(401).send({
+                    success: false,
+                    message: 'Unauthorized'
                 })
             }
         })
@@ -77,7 +100,7 @@ router.get('/users', function (req, res) {
         })
     }
 })
-router.put('/users/makeadmin', (req, res) => {
+router.put('/user/makeadmin', (req, res) => {
     if(typeof req.body.username_to_promote === 'undefined'){
         return res.json({
             success: false,
@@ -121,7 +144,7 @@ router.put('/users/makeadmin', (req, res) => {
         }
     })
 })
-router.put('/users/makeowner', (req, res) => {
+router.put('/user/makeowner', (req, res) => {
     if(typeof req.body.username_to_promote === 'undefined'){
         return res.json({
             success: false,
@@ -166,13 +189,13 @@ router.put('/users/makeowner', (req, res) => {
 })
 router.put('/users', UserController.update)
 router.delete('/users', UserController.remove)
-router.post('/users/login', UserController.login)
+router.post('/user/login', UserController.login)
 
 var verifyJWT = function (res, token, next) {
     jwt.verify(token, CONFIG.jwt_encryption, function (err, decoded) {
-        if (err) res.send({
+        if (err) return res.send({
             success: false,
-            message: 'Token is invalid.',
+            message: 'Invalid token',
             err
         })
         next(decoded)
