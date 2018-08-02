@@ -109,7 +109,7 @@ router.put('/user/makeadmin', (req, res) => {
     }
     verifyRole(res, getToken(req.headers), (err, role, user) => {
         if (err) throw err
-        if (role == 'admin') {
+        if (role == 'admin' || role=='user') {
             return res.json({
                 success: false,
                 message: 'Error: You don\'t have access to promote.'
@@ -153,7 +153,7 @@ router.put('/user/makeowner', (req, res) => {
     }
     verifyRole(res, getToken(req.headers), (err, role, user) => {
         if (err) throw err
-        if (role == 'admin') {
+        if (role == 'admin' || role == 'user') {
             return res.json({
                 success: false,
                 message: 'Error: You don\'t have access to promote.'
