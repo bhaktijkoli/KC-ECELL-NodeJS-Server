@@ -2,10 +2,7 @@ const mongoose = require('mongoose')
 const bcrypt = require('bcrypt')
 const jwt = require('jsonwebtoken')
 const validate = require('mongoose-validator')
-const {
-    throwError,
-    to
-} = require('../services/util.service')
+
 const CONFIG = require('../config/config')
 const saltRounds = 15
 let UserSchema = mongoose.Schema({

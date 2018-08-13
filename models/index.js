@@ -3,6 +3,7 @@ const path = require('path')
 const basename = path.basename(__filename)
 let User = require('./user.model');
 let Attendance = require('./attendance.model');
+let RFID = require('./rfid.model')
 const mongoose = require('mongoose')
 const CONFIG = require('../config/config')
 
@@ -25,4 +26,4 @@ if (CONFIG.db_host != '') {
     console.log('[-]\tNo Credentials Passed')
 }
 
-module.exports = {User, Attendance};
+module.exports = {User, Attendance, RFID};

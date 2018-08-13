@@ -1,9 +1,8 @@
 const { User } = require('../models')
 const { responseError, responseSuccess } = require('../services/util.service')
 const validator = require('validator');
-const CONFIG = require('../config/config')
-const jwt = require('jsonwebtoken')
-const create = async function (req, res) {
+const {verifyRole, getToken} = require('./../services/user.service')
+const create = (req, res) => {
     res.setHeader('Content-Type', 'application/json')
     const body = req.body
     if (!(body.username && body.password && body.email && body.fullname && body.mobile_number && body.branch && body.position)){
@@ -32,16 +31,75 @@ const create = async function (req, res) {
         })
     }
 }
-const get = async function(req, res) {
-    res.setHeader('Content-Type', 'application/json')
-    let username = req.username
-    jwt.verify(res.token, CONFIG.jwt_encryption, function(err, token) {
-        responseSuccess(res, {username: username, token: token})
-    });
+const getUserData = (req, res) => {
+    let token = getToken(req.headers)
+    if (token) {
+        verifyRole(res, token, (error, role, user) => {
+            if (error) {
+                return res.status(401).send({
+                    success: false,
+                    message: 'Invalid Token'
+                })
+            }
+            user.password = 'hidden'
+            return res.send({
+                status: role,
+                user: user,
+            })
+        })
+    } else {
+        return res.status(401).send({
+            success: false,
+            msg: 'Unauthorized'
+        })
+    }
 }
-const update = async function(req, res){}
-const remove = async function(req, res){}
-const login = async function(req, res) {
+const getUsers = (req, res) => {
+    let token = getToken(req.headers)
+    if (token) {
+        verifyRole(res, token, (error, role, user) => {
+            if (error) {
+                return res.status(404).send({
+                    success: false,
+                    message: 'Error: Token invalid.'
+                })
+            }
+            if(!role){
+                return res.status(404).send({
+                    success: false,
+                    message: 'Error: Role not found.'
+                })
+            }
+            if (role == 'admin' || role == 'owner') {
+                User.find((err, users) => {
+                    users.forEach(userX => {
+                        userX.password = "hidden"
+                        userX['role'] = "hidden"
+                        userX.email="hidden"
+                    })
+                    if (err) return res.status(404).send({
+                        success: false,
+                        error: err
+                    })
+                    res.send({
+                        users: users,
+                    })
+                })
+            } else {
+                res.status(401).send({
+                    success: false,
+                    message: 'Unauthorized'
+                })
+            }
+        })
+    } else {
+        return res.status(401).send({
+            success: false,
+            msg: 'Unauthorized'
+        })
+    }
+}
+const login = (req, res) => {
     res.setHeader('Content-Type', 'application/json')
     let body = req.body
     if(!body.email){
@@ -65,8 +123,100 @@ const login = async function(req, res) {
         return responseError(res, {success: false, message: 'Invalid Email'}, 404)
     }
 }
+const update = (req, res)=>{} // Pending
+const remove = (req, res)=>{} // Pending
+const makeAdmin = (req, res) => {
+    if(typeof req.body.username_to_promote === 'undefined'){
+        return res.json({
+            success: false,
+            message: 'Error: username_to_promote is undefined'
+        })
+    }
+    verifyRole(res, getToken(req.headers), (err, role, user) => {
+        if (err) throw err
+        if (role == 'admin' || role=='user') {
+            return res.json({
+                success: false,
+                message: 'Error: You don\'t have access to promote.'
+            })
+        } else if (role == 'owner') {
+            User.updateOne({username: req.body.username_to_promote}, {role: 1}, (err, raw) => {
+                if(err) throw err
+                if (raw.ok!=1) {
+                    return res.json({
+                        success: false,
+                        message: 'Error'
+                    })
+                }
+                if (raw.n == 0){
+                    return res.json({
+                        success: false,
+                        message: 'User not found'
+                    })
+                }
+                if(raw.nModified == 0 && raw.ok == 1){
+                    return res.json({
+                        success: false,
+                        message: 'Already admin'
+                    })
+                }
+                
+                return res.json({
+                    success: true,
+                    message: 'User promoted to admin'
+                })
+            })
+        }
+    })
+}
+const makeOwner = (req, res) => {
+    if(typeof req.body.username_to_promote === 'undefined'){
+        return res.json({
+            success: false,
+            message: 'Error: username_to_promote is undefined'
+        })
+    }
+    verifyRole(res, getToken(req.headers), (err, role, user) => {
+        if (err) throw err
+        if (role == 'admin' || role == 'user') {
+            return res.json({
+                success: false,
+                message: 'Error: You don\'t have access to promote.'
+            })
+        } else if (role == 'owner') {
+            User.updateOne({username: req.body.username_to_promote}, {role: 2}, (err, raw) => {
+                if(err) throw err
+                if (raw.ok!=1) {
+                    return res.json({
+                        success: false,
+                        message: 'Error'
+                    })
+                }
+                if (raw.n == 0){
+                    return res.json({
+                        success: false,
+                        message: 'User not found'
+                    })
+                }
+                if(raw.nModified == 0 && raw.ok == 1){
+                    return res.json({
+                        success: false,
+                        message: 'Already owner'
+                    })
+                }
+                return res.json({
+                    success: true,
+                    message: 'User promoted to owner.'
+                })
+            })
+        }
+    })
+}
 module.exports.create = create;
-module.exports.get = get;
+module.exports.login = login;
+module.exports.getUserData = getUserData;
+module.exports.getUsers = getUsers;
 module.exports.update = update;
 module.exports.remove = remove;
-module.exports.login = login;
+module.exports.makeAdmin = makeAdmin;
+module.exports.makeOwner = makeOwner;
