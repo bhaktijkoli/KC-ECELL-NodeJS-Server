@@ -69,12 +69,6 @@ _userSchema.pre('save', async function (next) {
         next()
     }
 })
-bcrypt.genSalt(saltRounds, (err, salt) => {
-    if (err) throw err
-    bcrypt.hash('1234567', salt, (err, pass) => {
-        if (err) throw err
-    })
-})
 
 _userSchema.method({
     user: this,

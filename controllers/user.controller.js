@@ -74,7 +74,6 @@ const getUsers = (req, res) => {
                 User.find((err, users) => {
                     users.forEach(userX => {
                         userX.password = "hidden"
-                        userX['role'] = "hidden"
                         userX.email="hidden"
                     })
                     if (err) return res.status(404).send({
