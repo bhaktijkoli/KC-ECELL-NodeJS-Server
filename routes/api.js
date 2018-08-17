@@ -24,7 +24,7 @@ router.get('/user', UserController.getUserData)
 router.get('/users', UserController.getUsers)
 router.put('/user/makeadmin', UserController.makeAdmin)
 router.put('/user/makeowner', UserController.makeOwner)
-router.put('/users', UserController.update)
+router.put('/user/:id', UserController.update)
 router.delete('/users', UserController.remove)
 
 router.post('/rfid', RFIDController.assignRFID)

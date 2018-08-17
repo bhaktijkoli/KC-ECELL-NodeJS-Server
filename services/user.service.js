@@ -15,9 +15,7 @@ let verifyRole = function (res, token, cb) {
     verifyJWT(res, token, (decoded) => {
         User.findById(decoded.user_id, (err, user) => {
             if (err) cb(err, null, null)
-            if (!user) cb(null, {
-                message: 'Not found'
-            }, null)
+            if (!user) cb(null, { message: 'Not found'}, null)
             user.password = 'hidden'
             if (user.role === 1) {
                 cb(null, 'admin', user)

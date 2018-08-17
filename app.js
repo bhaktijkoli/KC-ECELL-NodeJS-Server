@@ -21,20 +21,18 @@ app.use(cors())
 
 app.use('/api', apiRoute)
 app.get('/', function(req, res){
-    console.log(CONFIG.app)
+    console.log(CONFIG.app, req.local)
 	res.statusCode = 200;
 	res.json({status:"success", message:"Mongo API", data:{}})
-});
-
+})
 app.use(function(req, res, next){
     var err = new Error('Not found')
     err.status = 404
     next(err)
 })
-
 app.use(function(err, req, res, next){
     res.locals.message = err.message
-    res.locals.error = req.app.get('env')==='dev'?err:{}
+    res.locals.error = CONFIG.app==='dev'?err:{}
     return res.status(err.status || 500).send({
         err
     })

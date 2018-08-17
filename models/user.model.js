@@ -11,11 +11,6 @@ let UserSchema = mongoose.Schema({
         required: true,
         default: ""
     },
-    username: {
-        type: String,
-        required: true,
-        unique: true
-    },
     branch: {
         type: String
     },
@@ -89,6 +84,7 @@ _userSchema.method({
         if (bcrypt.compareSync(fromBody, fromDB)) {
             return true
         }
+        return false
     }
 })
 module.exports = mongoose.model('User', _userSchema)

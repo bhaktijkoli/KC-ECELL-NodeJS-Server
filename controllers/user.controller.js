@@ -1,35 +1,50 @@
-const { User } = require('../models')
-const { responseError, responseSuccess } = require('../services/util.service')
+const {
+    User
+} = require('../models')
+const {
+    responseError,
+    responseSuccess
+} = require('../services/util.service')
 const validator = require('validator');
-const {verifyRole, getToken} = require('./../services/user.service')
+const {
+    verifyRole,
+    getToken
+} = require('./../services/user.service')
+
 const create = (req, res) => {
     res.setHeader('Content-Type', 'application/json')
-    const body = req.body
-    if (!(body.username && body.password && body.email && body.fullname && body.mobile_number && body.branch && body.position)){
-        return responseError(res, 'Please enter all the required fields.', 406)
-    } else if (body.password !== body.password_conf){
-        return responseError(res, 'Passwords don\'t match!')
-    } else if (!validator.isEmail(body.email)) {
-        return responseError(res, 'Invalid Email')
-    } else {
-        let user = new User({
-            username: body.username,
-            email: body.email,
-            password: body.password,
-            fullname: body.fullname,
-            position: body.position,
-            mobile_number: body.mobile_number,
-            branch: body.branch,
-            login_date: Date.now(),
-            role: 0
-        })
-        user.save(function(err, user){
-            if(err){
-                return responseError(res, 'User already exisits', 406)
-            }
-            return responseSuccess(res, {message: 'User registered', username: user.username}, 201)
-        })
-    }
+    User.count({role: 1}, (err, adminCount) => {
+        if(err) throw err
+        const body = req.body
+        if (!(body.email && body.password && body.fullname && body.mobile_number && body.branch && body.position)) {
+            return responseError(res, 'Please enter all the required fields.', 406)
+        } else if (body.password !== body.password_conf) {
+            return responseError(res, 'Passwords don\'t match!')
+        } else if (!validator.isEmail(body.email)) {
+            return responseError(res, 'Invalid Email')
+        } else {
+            let user = new User({
+                email: body.email,
+                password: body.password,
+                fullname: body.fullname,
+                position: body.position,
+                mobile_number: body.mobile_number,
+                branch: body.branch,
+                login_date: Date.now(),
+                role: adminCount == 0 ? 1 : 0
+            })
+            user.save(function (err, user) {
+                if (err) {
+                    return responseError(res, 'User already exisits', 406)
+                }
+                return responseSuccess(res, {
+                    message: 'User registered',
+                    _id: user._id
+                }, 201)
+            })
+        }
+    })
+
 }
 const getUserData = (req, res) => {
     let token = getToken(req.headers)
@@ -64,7 +79,7 @@ const getUsers = (req, res) => {
                     message: 'Error: Token invalid.'
                 })
             }
-            if(!role){
+            if (!role) {
                 return res.status(404).send({
                     success: false,
                     message: 'Error: Role not found.'
@@ -74,7 +89,7 @@ const getUsers = (req, res) => {
                 User.find((err, users) => {
                     users.forEach(userX => {
                         userX.password = "hidden"
-                        userX.email="hidden"
+                        userX.email = "hidden"
                     })
                     if (err) return res.status(404).send({
                         success: false,
@@ -101,65 +116,88 @@ const getUsers = (req, res) => {
 const login = (req, res) => {
     res.setHeader('Content-Type', 'application/json')
     let body = req.body
-    if(!body.email){
-        return responseError(res, {success: false, message: 'Please enter email'}, 406)
+    if (!body.email) {
+        return responseError(res, {
+            success: false,
+            message: 'Please enter email'
+        }, 406)
     }
-    if(!body.password){
-        return responseError(res, {success: false, message: 'Please enter password'}, 406)
+    if (!body.password) {
+        return responseError(res, {
+            success: false,
+            message: 'Please enter password'
+        }, 406)
     }
-    if(validator.isEmail(body.email)){
-        User.findOne({email:body.email}, function(err, user){
-            if(err){
-                return responseError(res, {message: 'No such email.'}, 404)
-            } else if(user.comparePassword(body.password, user.password)) {
+    if (validator.isEmail(body.email)) {
+        User.findOne({
+            email: body.email
+        }, function (err, user) {
+            if (err) {
+                return responseError(res, {
+                    message: 'No such email.'
+                }, 404)
+            } else if (user.comparePassword(body.password, user.password)) {
                 res.setHeader('Authorization', user.getJWT())
-                return responseSuccess(res, {token:user.getJWT(), user: user.username}, 202)
+                return responseSuccess(res, {
+                    token: user.getJWT(),
+                    id: user._id
+                }, 202)
             } else {
-                return responseError(res, {message: 'Login failed'}, 404)
-            }            
+                return responseError(res, {
+                    message: 'Login failed'
+                }, 404)
+            }
         })
     } else {
-        return responseError(res, {success: false, message: 'Invalid Email'}, 404)
+        return responseError(res, {
+            success: false,
+            message: 'Invalid Email'
+        }, 404)
     }
 }
-const update = (req, res)=>{} // Pending
-const remove = (req, res)=>{} // Pending
+const update = (req, res) => {} // Pending
+const remove = (req, res) => {} // Pending
 const makeAdmin = (req, res) => {
-    if(typeof req.body.username_to_promote === 'undefined'){
+    if (typeof req.body.email_to_promote === 'undefined') {
         return res.json({
             success: false,
-            message: 'Error: username_to_promote is undefined'
+            message: 'Error: email_to_promote is undefined'
         })
     }
     verifyRole(res, getToken(req.headers), (err, role, user) => {
+        console.log(req.headers)
         if (err) throw err
-        if (role == 'admin' || role=='user') {
+        if (role == 'admin' || role == 'user') {
             return res.json({
                 success: false,
                 message: 'Error: You don\'t have access to promote.'
             })
         } else if (role == 'owner') {
-            User.updateOne({username: req.body.username_to_promote}, {role: 1}, (err, raw) => {
-                if(err) throw err
-                if (raw.ok!=1) {
+            User.updateOne({
+                email: req.body.email_to_promote
+            }, {
+                role: 1
+            }, (err, raw) => {
+                if (err) throw err
+                if (raw.ok != 1) {
                     return res.json({
                         success: false,
                         message: 'Error'
                     })
                 }
-                if (raw.n == 0){
+                if (raw.n == 0) {
                     return res.json({
                         success: false,
                         message: 'User not found'
                     })
                 }
-                if(raw.nModified == 0 && raw.ok == 1){
+                if (raw.nModified == 0 && raw.ok == 1) {
                     return res.json({
                         success: false,
                         message: 'Already admin'
                     })
                 }
-                
+
                 return res.json({
                     success: true,
                     message: 'User promoted to admin'
@@ -169,10 +207,10 @@ const makeAdmin = (req, res) => {
     })
 }
 const makeOwner = (req, res) => {
-    if(typeof req.body.username_to_promote === 'undefined'){
+    if (typeof req.body.email_to_promote === 'undefined') {
         return res.json({
             success: false,
-            message: 'Error: username_to_promote is undefined'
+            message: 'Error: email_to_promote is undefined'
         })
     }
     verifyRole(res, getToken(req.headers), (err, role, user) => {
@@ -183,21 +221,25 @@ const makeOwner = (req, res) => {
                 message: 'Error: You don\'t have access to promote.'
             })
         } else if (role == 'owner') {
-            User.updateOne({username: req.body.username_to_promote}, {role: 2}, (err, raw) => {
-                if(err) throw err
-                if (raw.ok!=1) {
+            User.updateOne({
+                email: req.body.email_to_promote
+            }, {
+                role: 2
+            }, (err, raw) => {
+                if (err) throw err
+                if (raw.ok != 1) {
                     return res.json({
                         success: false,
                         message: 'Error'
                     })
                 }
-                if (raw.n == 0){
+                if (raw.n == 0) {
                     return res.json({
                         success: false,
                         message: 'User not found'
                     })
                 }
-                if(raw.nModified == 0 && raw.ok == 1){
+                if (raw.nModified == 0 && raw.ok == 1) {
                     return res.json({
                         success: false,
                         message: 'Already owner'

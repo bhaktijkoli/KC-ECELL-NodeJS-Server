@@ -9,11 +9,6 @@ let RFIDSchema = mongoose.Schema({
     rfid: {
         type: String,
         required: true
-    },
-    date_activated: {
-        type: String,
-        default: Date.now(),
-        required: true
     }
 },
 {timestamps: true})
