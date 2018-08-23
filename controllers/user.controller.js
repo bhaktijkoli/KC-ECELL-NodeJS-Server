@@ -58,6 +58,7 @@ const getUserData = (req, res) => {
       }
       user.password = 'hidden'
       return res.send({
+        success: true,
         status: role,
         user: user,
       })
