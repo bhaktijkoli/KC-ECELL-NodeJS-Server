@@ -8,7 +8,8 @@ let RFIDSchema = mongoose.Schema({
     },
     rfid: {
         type: String,
-        required: true
+        required: true,
+        unique: true
     }
 },
 {timestamps: true})

@@ -28,5 +28,6 @@ router.put('/user/:id', UserController.update)
 router.delete('/users', UserController.remove)
 
 router.post('/rfid', RFIDController.assignRFID)
+router.get('/rfid/:tag', RFIDController.verifyRFID)
 
 module.exports = router

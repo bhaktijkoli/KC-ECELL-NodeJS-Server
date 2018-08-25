@@ -21,7 +21,6 @@ app.use(cors())
 
 app.use('/api', apiRoute)
 app.get('/', function(req, res){
-    console.log(CONFIG.app, req.local)
 	res.statusCode = 200;
 	res.json({status:"success", message:"Mongo API", data:{}})
 })
